@@ -1,0 +1,1630 @@
+type: custom:stack-in-card
+cards:
+  - type: custom:mushroom-chips-card
+    chips:
+      - type: template
+        entity: sensor.ecu_current_power
+        tap_action:
+          action: none
+        icon_color: orange
+        content: '{{ states(entity) }} w'
+        card_mod:
+          style: |
+            ha-card {
+              --chip-border-width: 0;
+              --chip-background: none;
+              --chip-box-shadow: none;
+              --chip-border-width: 0;
+            }
+      - type: template
+        content: >-
+          {% set month = ["", "Janvier", "Février", "Mars", "Avril", "Mai",
+          "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre",
+          "Décembre"] %} {{ now().day }} {{ month[now().month] }} {{ now().year
+          }}
+        card_mod:
+          style: |
+            /* Style date & time */
+            ha-card {
+              --chip-box-shadow: none;
+              --chip-background: none;
+              --chip-border-width: 0;
+            }
+      - type: template
+        entity: input_boolean.notifications
+        icon: |
+          {% if is_state('input_boolean.notifications', 'on') %}
+            mdi:bell
+          {% else %}
+            {% if state_attr('sensor.poubelle','jours') | int < 3 %}
+              mdi:trash-can-outline
+            {% elif is_state('light.ventilation','on') %}
+              mdi:fan
+            {% elif is_state('calendar.anniversaire','on') %}
+              mdi:cake
+            {% elif is_state('group.grp_update_all','on') %}
+              mdi:home-assistant
+            {% elif not is_state('sensor.offline_devices','RAS') %}
+              mdi:alert
+            {% elif is_state('vacuum.roborock_s8','cleaning') %}
+              mdi:robot-vacuum
+            {% elif is_state('input_boolean.bal','on') %}
+              mdi:mailbox-open-up-outline
+            {% elif not is_state('sensor.devices_with_low_battery','0') %}
+              mdi:battery-alert
+            {% else %}
+              mdi:bell
+            {% endif %}
+          {% endif %}
+        tap_action:
+          action: toggle
+        hold_action:
+          action: none
+        card_mod:
+          style: |
+            ha-card:after {
+              {% set notifications = (expand(states.group.grp_update_all) | selectattr('state', 'eq', 'on') | list | count)
+                                   + (expand(states.group.bal) | selectattr('state', 'eq', 'on') | list | count)
+                                   + states('sensor.hacs') |float |int
+                                   + (state_attr('sensor.poubelle', 'jours') | int < 3)
+                                   + states('sensor.devices_with_low_battery') | int %}
+              {% if notifications > 0 %}
+                content: "";
+              {% endif %}
+              position: absolute;
+              background: rgb(var(--rgb-red));
+              border-radius: 50%;
+              top: 1px;
+              right: 1px;
+              width: 10px;
+              height: 10px;
+            } 
+            ha-card {
+              {% if state_attr('sensor.poubelle','jours') | int < 3 %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif is_state('group.grp_update_all', 'on') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif not is_state('sensor.hacs', '0') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif not is_state('sensor.devices_with_low_battery', '0') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif not is_state('sensor.offline_devices', 'RAS') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif is_state('input_boolean.bal', 'on') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif is_state('light.ventilation', 'on') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% elif is_state('calendar.anniversaire', 'on') %}
+                --chip-box-shadow: 0px 0px 13px red;
+              {% else %}
+                --chip-box-shadow: 0px 0px 10px green;
+              {% endif %}
+            }
+            .content {
+              {% if notifications > 0 %}
+                animation: fade-out 1.5s infinite;
+                transform-origin: 50% 90%;
+              {% elif is_state('light.ventilation', 'on') %}
+                animation: spin 1s linear infinite;
+              {% endif %}
+            }
+            @keyframes fade-out {
+              0% { opacity:1; }
+              50% { opacity:0; }
+              100% { opacity:1; }
+            }
+    alignment: justify
+  - type: custom:swipe-card
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:home
+            layout: vertical
+            icon_color: blue-grey
+            badge_icon: none
+            badge_color: disable
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: toggle
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - media: hide
+                  - energy: hide
+                  - divers: hide
+                  - essence: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style: |
+                ha-card {
+                  width: 50px;
+                  --spacing: 5px;
+                  background: rgba(var(--rgb-blue-grey), 0.2) !important;
+                  box-shadow: var(--ha-card-box-shadow) !important;
+                  border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                  margin-top: 4px;
+                  margin-bottom: 4px;
+                  margin-left: auto;
+                  margin-right: auto;
+                  transition: all 0.5s;
+                }
+                ha-card:hover {
+                  background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                  z-index: 1;
+                  transform: scale(1.0);
+                  transition: all 0.1s;
+                  box-shadow: 0 0 5px !important;
+                }
+                mushroom-badge-icon:after {
+                  content: '{{ states('sensor.temperature_salon') |int }}°C';
+                  position: absolute;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  background: rgb(var(--rgb-green));
+                  color: var(--card-background-color);
+                  font-weight: bolder;
+                  border-radius: 50%;
+                  top: -20%;
+                  left: -5%;
+                  width: 145%;
+                  height: 145%;
+                  font-size: 0.65em;
+                }
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:lightbulb
+            layout: vertical
+            icon_color: |-
+              {% if is_state('group.lumiere_2', 'on') %}
+                yellow
+              {% else %}
+                grey
+              {% endif %}
+            badge_icon: none
+            badge_color: disable
+            entity: group.lumiere_2
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: toggle
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            double_tap_action:
+              action: fire-dom-event
+              haptic: heavy
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  dissmissable: false
+                  timeout: 55000
+                  style: |
+                    --mdc-theme-surface: transparent;
+                  content:
+                    type: picture-elements
+                    image: /local/Floorplan/iphone/v2/Maison_off.png
+                    card_mod:
+                      style: |
+                        ha-card {
+                          border-radius: 15px;
+                        :host {
+                          position: sticky;
+                          z-index: 10;
+                        }
+                    elements:
+                      - type: conditional
+                        conditions:
+                          - entity: switch.lumiere_salon
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_salon.png
+                      - type: conditional
+                        conditions:
+                          - entity: switch.lampe_guirlande
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_guirlande.png
+                      - type: conditional
+                        conditions:
+                          - entity: switch.lampe_led
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_led.png
+                      - type: conditional
+                        conditions:
+                          - entity: switch.lampe_caoutchouc
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_caoutchouc.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lampe_canape
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_canape.png
+                      - type: conditional
+                        conditions:
+                          - entity: switch.lumiere_salle_a_manger
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_salleamanger.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_buanderie
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_buanderie.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_couloir
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_couloir.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_garage
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_garage.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_chambre_louis
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_louis.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_wc
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_wc.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_salle_de_bain
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_sdb.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_chambre_parentale
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_parent.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_dressing
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_dressing.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_chambre_samuel
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_samuel.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_ext_cote
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_ext_nord.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_cuisine
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_cuisine.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_ext_terrasse
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_ext_terrasse.png
+                      - type: conditional
+                        conditions:
+                          - entity: light.lumiere_ext_garage
+                            state: 'on'
+                        elements:
+                          - type: image
+                            tap_action:
+                              action: none
+                            style:
+                              top: 50%
+                              left: 50%
+                              width: 100%
+                            image: /local/Floorplan/iphone/v2/Maison_ext_garage.png
+            card_mod:
+              style:
+                .: |
+                  ha-state-icon {
+                    {% set media_type = states(config.entity) %}
+                    {% if media_type == 'off' %}
+                      --card-mod-icon: mdi:lightbulb;
+                    {% else %}
+                      --card-mod-icon: mdi:lightbulb;
+                      animation: boing 4s infinite;
+                      transform-origin: 50% 90%;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('group.lumiere_2', 'on') }}
+                  }
+                  @keyframes boing {
+                    0% { transform: scale3d(1, 1, 1); }
+                    7% { transform: scale3d(1.25, 0.75, 1); }
+                    10% { transform: scale3d(0.75, 1.25, 1); }
+                    12% { transform: scale3d(1.15, 0.85, 1); }
+                    16% { transform: scale3d(0.95, 1.05, 1); }
+                    19% { transform: scale3d(1.05, 0.95, 1); }
+                    25% { transform: scale3d(1, 1, 1); }
+                  }
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('group.lumiere_2', 'on') %}
+                      background: rgba(var(--rgb-yellow), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-grey), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    box-shadow: 0 0 5px !important;
+                    transition: all 0.1s;
+                  }
+                  mushroom-badge-icon:after {
+                    {% if is_state('group.lumiere_2', 'on') %}
+                      content: "{{ expand(states.group.lumiere_2) | selectattr( 'state', 'eq', 'on') | list | count }}";
+                      position: absolute;
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                      background: rgb(var(--rgb-amber));
+                      color: var(--card-background-color);
+                      font-weight: bolder;
+                      border-radius: 50%;
+                      top: 0;
+                      width: 100%;
+                      height: 100%;
+                      font-size: 0.7em;
+                    {% else %}
+                    {% endif %}
+                  }
+          - type: custom:mushroom-template-card
+            primary: ''
+            secondary: ''
+            icon: |2-
+                {% if is_state('binary_sensor.portail', 'on') %}
+                  mdi:gate-open
+                {% else %}
+                  mdi:gate
+                {% endif %}
+            icon_color: |2-
+                {% if is_state('binary_sensor.portail', 'on') %}
+                  red
+                {% else %}
+                  green
+                {% endif %}
+            layout: vertical
+            entity: binary_sensor.portail
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: toggle
+                  - camera: hide
+                  - camera2: hide
+                  - media: hide
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - energy: hide
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - meteo_menu: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style:
+                mushroom-shape-icon$: |
+                  .shape {
+                    {% set gate = states(config.entity) %}
+                    {% if gate == 'on' %}
+                      --shape-animation: ping 1s infinite;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('binary_sensor.portail', 'off') }}
+                  }
+                  @keyframes ping {
+                    0% { box-shadow: 0 0 1px 1px rgba(var(--rgb-red), 0.9); }
+                    100% { box-shadow: 0 0 5px 10px transparent; }
+                  }
+                style: |
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('binary_sensor.portail', 'on') %}
+                      background: rgba(var(--rgb-red), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-green), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    transition: all 0.1s;
+                    box-shadow: 0 0 5px !important;
+                  }
+          - type: custom:mushroom-template-card
+            primary: ''
+            secondary: ''
+            icon: none
+            entity: group.grp_motion
+            layout: vertical
+            icon_color: |-
+              {% if is_state('group.grp_motion', 'on') %}
+                red
+              {% else %}
+                blue
+              {% endif %}
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: toggle
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style:
+                .: |
+                  ha-state-icon {
+                    {% set detection = states('group.grp_motion') %}
+                    {% if detection == 'on' %}
+                      animation: clip 2s linear infinite;
+                      --shape-animation: motion 2s linear infinite;
+                      --card-mod-icon: mdi:motion-sensor;
+                      transform-origin: 90% 80%
+                    {% else %}
+                      --card-mod-icon: mdi:cctv-off;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('group.grp_motion', 'on') }}
+                  }
+                  .shape {
+                    {% set detection = states('group.grp_motion') %}
+                    {% if detection == 'on' %}
+                      --shape-animation: motion 2s linear infinite;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('group.grp_motion', 'on') }}
+                  }
+                  @keyframes clip {
+                    50% { clip-path: polygon(0 0, 55% 0, 100% 100%, 0 100%); }
+                  }
+                  @keyframes motion {
+                    0%, 100% { --shape-color: rgba(var(--rgb-red), 0.4); }
+                    50% { --shape-color: rgba(var(--rgb-red), 0.25); }
+                  }
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('group.grp_motion', 'on') %}
+                      background: rgba(var(--rgb-red), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-blue), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    transition: all 0.1s;
+                    box-shadow: 0 0 5px !important;
+                  }
+          - type: custom:mushroom-template-card
+            secondary: ''
+            entity: media_player.currently_playing
+            layout: vertical
+            icon: none
+            icon_color: |2-
+                {% if is_state('media_player.currently_playing', 'playing') %}
+                  cyan
+                {% elif is_state('media_player.currently_playing', 'paused') %}
+                  orange
+                {% else %}
+                  green
+                {% endif %}
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: toggle
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style:
+                .: |
+                  ha-state-icon {
+                    display: flex;
+                    {% set media_type = state_attr(config.entity, 'media_content_type') %}
+                    {% if media_type == 'tvshow' %}
+                      --card-mod-icon: mdi:television-classic;
+                      animation: flicker 1s linear infinite alternate;
+                    {% elif media_type == 'movie' %}
+                      --card-mod-icon: mdi:movie-roll;
+                      animation: spin 1.5s linear infinite;
+                    {% elif media_type == 'video' %}
+                      --card-mod-icon: mdi:movie-roll;
+                      animation: spin 1.5s linear infinite;
+                    {% elif media_type == 'music' %}
+                      --card-mod-icon: mdi:music;
+                      animation: beat 1.3s ease-out infinite both;
+                    {% elif media_type == 'playlist' %}
+                      --card-mod-icon: mdi:music;
+                      animation: beat 1.3s ease-out infinite both;
+                    {% else %}
+                      --card-mod-icon: mdi:multimedia;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state(config.entity, 'playing') }}
+                  }
+                  @keyframes flicker {
+                    0%, 31.98%, 32.98%, 34.98%, 36.98%, 39.98%, 67.98%, 68.98%, 95.98%, 96.98%, 97.98%, 98.98%, 100% { --icon-color: rgba(var(--rgb-cyan), 1); }
+                    32%, 33%, 35%, 36%, 37%, 40%, 68%, 69%, 96%, 97%, 98%, 99% { --icon-color: rgba(var(--rgb-cyan), 0.3); }
+                  }
+                  @keyframes beat {
+                    0%, 60% { --icon-symbol-size: 21px; }
+                    5%, 17%, 57% { --icon-symbol-size: 22px; }
+                    10%, 20%, 51% { --icon-symbol-size: 23px; }
+                    25%, 45% { --icon-symbol-size: 24px; }
+                    30%, 39% { --icon-symbol-size: 25px; }
+                    33% { --icon-symbol-size: 26px; }
+                  }
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('media_player.currently_playing', 'playing') %}
+                      background: rgba(var(--rgb-cyan), 0.2)  !important;
+                    {% elif is_state('media_player.currently_playing', 'paused') %}
+                      background: rgba(var(--rgb-orange), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-green), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    transition: all 0.1s;
+                    box-shadow: 0 0 5px !important;
+                  }
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:dots-hexagon
+            layout: vertical
+            icon_color: blue
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: toggle
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style: |
+                ha-card {
+                  width: 50px;
+                  --spacing: 5px;
+                  background: rgba(var(--rgb-blue), 0.2)  !important;
+                  box-shadow: var(--ha-card-box-shadow) !important;
+                  border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                  margin-top: 4px;
+                  margin-bottom: 4px;
+                  margin-left: auto;
+                  margin-right: auto;
+                  transition: all 0.5s;
+                }
+                ha-card:hover {
+                  background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                  z-index: 1;
+                  transform: scale(1.0);
+                  transition: all 0.1s;
+                  box-shadow: 0 0 5px !important;
+                }
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:devices
+            layout: vertical
+            icon_color: cyan
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: toggle
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style: |
+                ha-card {
+                  width: 50px;
+                  --spacing: 5px;
+                  background: rgba(var(--rgb-cyan), 0.2)  !important;
+                  box-shadow: var(--ha-card-box-shadow) !important;
+                  border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                  margin-top: 4px;
+                  margin-bottom: 4px;
+                  margin-left: auto;
+                  margin-right: auto;
+                  transition: all 0.5s;
+                }
+                ha-card:hover {
+                  background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                  z-index: 1;
+                  transform: scale(1.0);
+                  transition: all 0.1s;
+                  box-shadow: 0 0 5px !important;
+                }
+          - type: custom:mushroom-template-card
+            primary: ''
+            secondary: ''
+            icon: mdi:server-network
+            layout: vertical
+            icon_color: |2-
+                {% if is_state('device_tracker.udm_pro', 'home') %}
+                  green
+                {% else %}
+                  red
+                {% endif %}
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - essence: hide
+                  - serveur: toggle
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style:
+                mushroom-shape-icon$: |
+                  .shape {
+                    {% set net = states('device_tracker.udm_pro') %}
+                    {% if net == 'not_home' %}
+                      --shape-animation: ping 2s infinite;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('device_tracker.udm_pro', 'home') }}
+                  }
+                  @keyframes ping {
+                    0% { box-shadow: 0 0 1px 1px rgba(var(--rgb-red), 0.7); }
+                    100% { box-shadow: 0 0 5px 15px transparent; }
+                  }
+                style: |
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('device_tracker.udm_pro', 'home') %}
+                      background: rgba(var(--rgb-green), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-red), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    transition: all 0.1s;
+                    box-shadow: 0 0 5px !important;
+                  }
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:fan
+            entity: light.ventilation
+            layout: vertical
+            icon_color: |-
+              {% if is_state('light.ventilation', 'on') %}
+                orange
+              {% else %}
+                green
+              {% endif %}
+            tap_action:
+              action: toggle
+            card_mod:
+              style:
+                mushroom-shape-icon$: |
+                  .shape {
+                    {% set ventil = states('light.ventilation') %}
+                    {% if ventil == 'on' %}
+                      --shape-animation: ping 1s infinite;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('light.ventilation', 'off') }}
+                  }
+                  @keyframes ping {
+                    0% { box-shadow: 0 0 1px 1px rgba(var(--rgb-orange), 0.9); }
+                    100% { box-shadow: 0 0 5px 10px transparent; }
+                  }
+                style: |
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('light.ventilation', 'on') %}
+                      background: rgba(var(--rgb-orange), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-green), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-bottom: 2px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    transition: all 0.1s;
+                    box-shadow: 0 0 5px !important;
+                  }
+                .: |
+                  ha-state-icon {
+                    {% set ventil_type = states(config.entity) %}
+                    {% if ventil_type == 'off' %}
+                      --card-mod-icon: mdi:fan;
+                    {% else %}
+                      --card-mod-icon: mdi:fan;
+                      animation: spin 1s linear infinite;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('light.ventilation', 'on') }}
+                  }
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:robot-vacuum
+            layout: vertical
+            icon_color: |-
+              {% if is_state('vacuum.roborock_s8', 'cleaning') %}
+                orange
+              {% else %}
+                green
+              {% endif %}
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: hide
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - essence: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: toggle
+            card_mod:
+              style:
+                mushroom-shape-icon$: |
+                  .shape {
+                    {% set vacuum = states('vacuum.roborock_s8') %}
+                    {% if vacuum == 'cleaning' %}
+                      --shape-animation: ping 1s infinite;
+                    {% endif %}
+                    {{ 'animation: none;' if not is_state('vacuum.roborock_s8', 'cleaning') }}
+                  }
+                  @keyframes ping {
+                    0% { box-shadow: 0 0 1px 1px rgba(var(--rgb-orange), 0.9); }
+                    100% { box-shadow: 0 0 5px 10px transparent; }
+                  }
+                style: |
+                  ha-card {
+                    width: 50px;
+                    --spacing: 5px;
+                    {% if is_state('vacuum.roborock_s8', 'cleaning') %}
+                      background: rgba(var(--rgb-orange), 0.2)  !important;
+                    {% else %}
+                      background: rgba(var(--rgb-green), 0.2)  !important;
+                    {% endif %}
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-bottom: 2px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    transition: all 0.5s;
+                  }
+                  ha-card:hover {
+                    background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                    z-index: 1;
+                    transform: scale(1.0);
+                    transition: all 0.1s;
+                    box-shadow: 0 0 5px !important;
+                  }
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Search...
+            secondary: ''
+            icon: mdi:search-web
+            icon_color: blue-grey
+            entity: input_select.plex_recently
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  tyle: |
+                    --mdc-theme-surface: transparent;
+                    --vertical-align-dialog: center;
+                  content:
+                    type: custom:stack-in-card
+                    cards:
+                      - type: entities
+                        entities:
+                          - entity: input_text.gpt_prompt
+                      - type: markdown
+                        content: >-
+                          {{ state_attr('sensor.hassio_mindsdb_response',
+                          'response_text') }}
+                        title: Réponse
+            card_mod:
+              style: |
+                ha-card {
+                  {% if is_state('media_player.currently_playing', ['idle','off']) %}
+                    background: var(--card-background-color) !important;
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    width: 99%;
+                    --spacing: 5px;
+                    margin-bottom: 4px;
+                    margin-top: 4px;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-left: 2px;
+                    margin-right: auto;
+                  {% else %}
+                    width: 50px;
+                    --spacing: 5px;
+                    background: var(--card-background-color) !important;
+                    box-shadow: var(--ha-card-box-shadow) !important;
+                    border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                    margin-top: 4px;
+                    margin-bottom: 4px;
+                    margin-left: 1%;
+                    transition: all 0.5s;
+                  {% endif %} 
+                }
+                ha-card:hover {
+                  background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                  transition: all 0.1s;
+                }
+          - type: conditional
+            conditions:
+              - entity: media_player.currently_playing
+                state_not: 'off'
+              - entity: media_player.currently_playing
+                state_not: idle
+            card:
+              type: custom:stack-in-card
+              mode: horizontal
+              cards:
+                - type: custom:mushroom-media-player-card
+                  entity: media_player.currently_playing
+                  layout: horizontal
+                  show_volume_level: false
+                  use_media_info: true
+                  fill_container: false
+                  tap_action:
+                    action: fire-dom-event
+                    browser_mod:
+                      service: browser_mod.popup
+                      data:
+                        style: |
+                          --mdc-theme-surface: transparent;
+                          --vertical-align-dialog: center;
+                        content:
+                          type: custom:stack-in-card
+                          cards:
+                            - type: custom:mushroom-media-player-card
+                              entity: media_player.currently_playing
+                              name: Plex
+                              icon: mdi:play
+                              use_media_info: true
+                              use_media_artwork: false
+                              show_volume_level: false
+                              media_controls:
+                                - play_pause_stop
+                                - previous
+                                - next
+                              volume_controls:
+                                - volume_buttons
+                                - volume_set
+                              fill_container: false
+                              card_mod:
+                                style: |
+                                  mushroom-shape-icon {
+                                    display: flex;
+                                    {% set media_type = state_attr(config.entity, 'media_content_type') %}
+                                    {% if media_type == 'tvshow' %}
+                                      --card-mod-icon: mdi:television-classic;
+                                      animation: flicker 1s linear infinite alternate;
+                                    {% elif media_type == 'movie' %}
+                                      --card-mod-icon: mdi:movie-roll;
+                                      animation: spin 2s linear infinite reverse;
+                                    {% elif media_type == 'music' %}
+                                      --card-mod-icon: mdi:music;
+                                      animation: beat 1.3s ease-out infinite both;
+                                    {% elif media_type == 'playlist' %}
+                                      --card-mod-icon: mdi:music;
+                                      animation: beat 1.3s ease-out infinite both;
+                                    {% else %}
+                                      --card-mod-icon: mdi:play;
+                                    {% endif %}
+
+                                    {{ 'animation: none;' if not is_state(config.entity, 'playing') }}
+
+                                  }
+                                  @keyframes flicker {
+                                    0%, 31.98%, 32.98%, 34.98%, 36.98%, 39.98%, 67.98%, 68.98%, 95.98%, 96.98%, 97.98%, 98.98%, 100% { --icon-color: rgba(var(--rgb-indigo), 1); }
+                                    32%, 33%, 35%, 36%, 37%, 40%, 68%, 69%, 96%, 97%, 98%, 99% { --icon-color: rgba(var(--rgb-indigo), 0.6); }
+                                  }
+                                  @keyframes beat {
+                                    0%, 60% { --icon-symbol-size: 21px; }
+                                    5%, 17%, 57% { --icon-symbol-size: 22px; }
+                                    10%, 20%, 51% { --icon-symbol-size: 23px; }
+                                    25%, 45% { --icon-symbol-size: 24px; }
+                                    30%, 39% { --icon-symbol-size: 25px; }
+                                    33% { --icon-symbol-size: 26px; }
+                                  }
+                                  ha-card {
+                                    --ha-card-border-width: 0;
+                                  }
+                                  ha-card:before {
+                                    transform: translate3d(0,0,0);
+                                    -webkit-transform: translate3d(0,0,0);
+                                    content: "";
+
+                                    background: url('/local/mushroom/idle_art.png') center no-repeat;
+                                    {% if not is_state(config.entity, 'idle') %}
+                                      background: url( '{{ state_attr(config.entity, "entity_picture") }}') center no-repeat;
+                                    {% endif %}
+
+                                    background-size: contain;
+                                    margin: 4px 4px 16px;
+                                    filter: drop-shadow(4px 4px 6px rgba(0, 0, 0, 0.5));
+                                    border-radius: var(--control-border-radius);
+
+                                    {% set media_type = state_attr(config.entity, 'media_content_type') %}
+                                    {% if media_type == 'tvshow' %}
+                                      aspect-ratio: 16 / 9;
+                                    {% elif media_type == 'movie' %}
+                                      aspect-ratio: 2 / 3;
+                                    {% else %}
+                                      aspect-ratio: 1 / 1;
+                                    {% endif %}
+                                  }
+                            - type: conditional
+                              conditions:
+                                - entity: media_player.currently_playing
+                                  state_not: 'off'
+                                - entity: media_player.currently_playing
+                                  state_not: idle
+                              card:
+                                entity: media_player.currently_playing
+                                hide:
+                                  icon: true
+                                  name: true
+                                  runtime: true
+                                  source: true
+                                  power: true
+                                  state_label: true
+                                  volume: true
+                                  info: true
+                                  progress: false
+                                  controls: true
+                                more_info: false
+                                type: custom:mini-media-player
+                                toggle_power: false
+                                group: true
+                                card_mod:
+                                  style:
+                                    mmp-progress$: |
+                                      paper-progress {
+                                        /* Apply album art color to progress bar when paused */
+                                        --paper-progress-container-color: rgba(var(--album-art-color), 0.2) !important;
+                                        /* Apply album art color to progress bar when playing */
+                                        --paper-progress-active-color: rgb(var(--album-art-color)) !important;
+                                      }
+                                    .: |
+                                      ha-card {
+                                          /* Move progress bar up into gap. Check if PLAY|STOP are supported */
+                                        --base-offset: calc(0 * var(--mush-spacing, 12px)
+                                                            + 1.33 * var(--mush-spacing, 12px)
+                                                            + var(--mush-card-primary-line-height, 1.5) * var(--mush-card-primary-font-size, 14px)
+                                                            + var(--mush-card-secondary-line-height, 1.5) * var(--mush-card-secondary-font-size, 12px)
+                                                            + var(--mush-control-height, 42px));
+
+                                          /* Check if Play (16385) or Stop (4096) are supported and add control button height if they are */
+                                        {% if state_attr(config.entity, 'supported_features') | int | bitwise_and(20480) > 0 %}
+                                          --control-offset: calc(var(--mush-spacing, 12px) + var(--mush-control-height, 42px));
+                                        {% else %}
+                                          --control-offset: 0px;
+                                        {% endif %}
+
+                                          /* Check if album name is present and add to height if it is */
+                                        {% set album_name = state_attr(config.entity, 'media_album_name') %}
+                                        {% if album_name == None or album_name == "" %}
+                                          --album-offset: 0px;
+                                        {% else %}
+                                          --album-offset: calc(var(--mush-card-secondary-line-height, 1.5) * var(--mush-card-secondary-font-size, 12px));
+                                        {% endif %}
+
+                                          bottom: calc(var(--base-offset) + var(--control-offset) + var(--album-offset));
+
+                                          /* Correct margins for progress bar */
+                                        margin: 0px 28px -12px;
+
+                                          /* Set height of card to match pregress bar height */
+                                        height: var(--mmp-progress-height);
+
+                                          /* Remove border outline */
+                                        --ha-card-border-width: 0;
+
+                                          /* Round corners of progress bar */
+                                        --mmp-border-radius: var(--control-border-radius, 12px) !important;
+
+                                          /* Set height of progress bar */
+                                        --mmp-progress-height: 12px !important;
+
+                                          /* Remove transitions to prevent progress bar floating in */
+                                        transition: all 0s;
+                                      }
+                          card_mod:
+                            style:
+                              .: |
+                                ha-card:before {
+                                  transform: translate3d(0,0,0);
+                                  -webkit-transform: translate3d(0,0,0);
+                                  content: "";
+                                  position: absolute;
+                                  height: 100%;
+                                  width: 100%;
+                                  background: url('/local/mushroom/idle_art.png') center no-repeat;
+                                  {% if not is_state('media_player.currently_playing', 'idle') %}
+                                    background: url( '{{ state_attr('media_player.currently_playing', "entity_picture") }}' ) center no-repeat;
+                                  {% endif %}
+                                  filter: blur(150px) saturate(200%);
+                                  background-size: 100% 100%;
+                                }
+                                ha-card {
+                                  transform: translate3d(0,0,0);
+                                  -webkit-transform: translate3d(0,0,0);
+                                }
+                                :host {
+                                  /* Set width of popup */
+                                  --popup-min-width: 450px;
+                                }
+                              ha-header-bar$: |
+                                .mdc-top-app-bar {
+                                  /* Remove header background so that popup background is visible */
+                                  --mdc-theme-primary: none;
+                                  /* Reduced the gap between header and album art */
+                                  margin-bottom: -16px;
+                                }
+                        card_mod:
+                          style:
+                            ha-header-bar$: |
+                              .mdc-top-app-bar {
+                                --mdc-theme-primary: none;
+                                margin-bottom: -16px;
+                              }
+                            .: |
+                              :host {
+                                --popup-min-width: 450px;
+                              }
+                  card_mod:
+                    style:
+                      .: |
+                        ha-state-icon {
+                          display: flex;
+                          {% set media_type = state_attr(config.entity, 'media_content_type') %}
+                          {% if media_type == 'tvshow' %}
+                            --card-mod-icon: mdi:television-classic;
+                            animation: flicker 1s linear infinite alternate;
+                          {% elif media_type == 'movie' %}
+                            --card-mod-icon: mdi:movie-roll;
+                            animation: spin 1.5s linear infinite;
+                          {% elif media_type == 'video' %}
+                            --card-mod-icon: mdi:movie-roll;
+                            animation: spin 1.5s linear infinite;
+                          {% elif media_type == 'music' %}
+                            --card-mod-icon: mdi:music;
+                            animation: beat 1.3s ease-out infinite both;
+                          {% elif media_type == 'playlist' %}
+                            --card-mod-icon: mdi:music;
+                            animation: beat 1.3s ease-out infinite both;
+                          {% else %}
+                            --card-mod-icon: mdi:multimedia;
+                          {% endif %}
+                          {{ 'animation: none;' if not is_state(config.entity, 'playing') }}
+                        }
+                        @keyframes flicker {
+                          0%, 31.98%, 32.98%, 34.98%, 36.98%, 39.98%, 67.98%, 68.98%, 95.98%, 96.98%, 97.98%, 98.98%, 100% { --icon-color: rgba(var(--rgb-cyan), 1); }
+                          32%, 33%, 35%, 36%, 37%, 40%, 68%, 69%, 96%, 97%, 98%, 99% { --icon-color: rgba(var(--rgb-cyan), 0.3); }
+                        }
+                        @keyframes beat {
+                          0%, 60% { --icon-symbol-size: 21px; }
+                          5%, 17%, 57% { --icon-symbol-size: 22px; }
+                          10%, 20%, 51% { --icon-symbol-size: 23px; }
+                          25%, 45% { --icon-symbol-size: 24px; }
+                          30%, 39% { --icon-symbol-size: 25px; }
+                          33% { --icon-symbol-size: 26px; }
+                        }
+                        ha-card {
+                          {% if not is_state(config.entity, 'off') %}
+                            background: rgba(var(--rgb-card-background-color), 0.6) url( '{{ state_attr(config.entity, "entity_picture") }}' ) center no-repeat;
+                            background-size: cover;
+                            background-blend-mode: overlay;
+                          {% endif %} 
+                          border-radius: 35px 35px 35px 35px !important;
+                          height: 55px !important;
+                          margin-left: -8px;
+                        }
+              card_mod:
+                style: |
+                  ha-card {
+                    {% if is_state('media_player.currently_playing', ['playing','paused']) %}
+                      background-image: url( '{{ state_attr( "media_player.currently_playing", "entity_picture" ) }}' );
+                      background-position: center;
+                      background-repeat: no-repeat;
+                      background-size: cover;
+                      background-color: rgba(var(--rgb-card-background-color), 0.8);
+                      background-blend-mode: overlay;
+                      position: relative;
+                      margin-left: -71%;
+                      width: 170%;
+                      margin-top: 1px;
+                      margin-bottom: 4px;
+                      border-radius: 35px 35px 35px 35px !important;
+                      transition: all 0.5s;
+                    {% else %}
+                      width: 0px;
+                      --spacing: 0px;
+                      background: transparent !important;
+                      box-shadow: none !important;
+                      border-radius: none !important;
+                      margin-top: 0px;
+                      margin-left: auto;
+                      margin-right: 54%;
+                      transition: all 0.5s;
+                    {% endif %} 
+                  }
+      - type: horizontal-stack
+        cards:
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: blank
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: blank
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: blank
+          - type: custom:mushroom-chips-card
+            chips:
+              - type: blank
+          - type: custom:mushroom-template-card
+            secondary: ''
+            icon: mdi:fuel
+            layout: vertical
+            icon_color: brown
+            tap_action:
+              action: fire-dom-event
+              local_conditional_card:
+                action: set
+                ids:
+                  - home: hide
+                  - light: hide
+                  - portail: hide
+                  - camera: hide
+                  - camera2: hide
+                  - energy: hide
+                  - media: hide
+                  - divers: hide
+                  - essence: toggle
+                  - monitoring: hide
+                  - monitoring_prod: hide
+                  - monitoring_conso: hide
+                  - device: hide
+                  - serveur: hide
+                  - net: hide
+                  - meteo: hide
+                  - plan: hide
+                  - plex: hide
+                  - search: hide
+                  - temperature: hide
+                  - humidite: hide
+                  - vacuum: hide
+            card_mod:
+              style: |
+                ha-card {
+                  width: 50px;
+                  --spacing: 5px;
+                  background: rgba(var(--rgb-brown), 0.2)  !important;
+                  box-shadow: var(--ha-card-box-shadow) !important;
+                  border-radius: calc(var(--ha-card-border-radius, 12px) * 2) !important;
+                  margin-top: 4px;
+                  margin-bottom: 4px;
+                  margin-left: auto;
+                  margin-right: auto;
+                  transition: all 0.5s;
+                }
+                ha-card:hover {
+                  background: color-mix(in srgb, var(--{{ config.icon_color }}-color) 25%, var(--card-background-color)) !important;
+                  z-index: 1;
+                  transform: scale(1.0);
+                  transition: all 0.1s;
+                  box-shadow: 0 0 5px !important;
+                }
+card_mod:
+  style: |
+    /* Remove styling from top card with chips */
+    ha-card {
+      overflow: visible !important;
+      margin-top: calc(-1 * var(--mush-chip-spacing, 8px));
+      box-shadow: none;
+      border: none;
+      background: none;
+      padding: var(--mush-chip-spacing, 10px);
+      transition: all 0s;
+      position: sticky !important;
+      top: 0px;
+      z-index: 1;
+    }
+    /* Pseudo element for background & other card styling */
+    ha-card:before {
+      content: "";
+      /* Position & size card behind chips */
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      height: 100%;
+
+      /* Adjust width to account for border */
+      width: calc(100% - 2 * var(--ha-card-border-width, 1px));
+
+      /* Position card at back */
+      z-index: 0;
+
+      /* Blur content behind card */
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+
+      /* Adjust opacity of card */
+      background: rgba(var(--rgb-card-background-color), 0.35);
+
+      /* Set styling of card */
+      border-radius: 0px 0px var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px);
+      box-shadow: var(--ha-card-box-shadow);
+      border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+    }
